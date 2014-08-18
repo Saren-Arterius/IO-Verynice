@@ -58,7 +58,7 @@ class IOVeryNice(Thread):
             }
         },
         "other": {
-            "check_interval": 10
+            "check_interval": 5
         }
     }
 
@@ -71,15 +71,16 @@ class IOVeryNice(Thread):
         if grep_string is not None and len(grep_string):
             valid += 1
         self.grep_string = grep_string
-        if owner is not None and getpwnam(owner):
+        self.owner_uid = None
+        if owner is not None:
             valid += 1
+            self.owner_uid = getpwnam(owner).pw_uid
         assert valid >= 2
-        self.owner = owner
         assert prio_class in range(0, 4)
         self.prio_class = prio_class
         assert prio_data in range(0, 8)
         self.prio_data = prio_data
-        self.pids = None
+        self.pgid = None
         self.EXIT_FLAG = False
 
     def run(self):
@@ -87,50 +88,70 @@ class IOVeryNice(Thread):
         while True:
             if self.EXIT_FLAG:
                 return
-            new_pids = self.get_pids()
-            if new_pids != self.pids and isinstance(new_pids, list):
-                for pid in new_pids:
-                    call_args = ["ionice", "-c", str(self.prio_class)]
-                    if self.prio_class == 1 or self.prio_class == 2:
-                        call_args += ["-n", str(self.prio_data)]
-                    call_args += ["-p", str(pid)]
-                    call(call_args)
-            self.pids = new_pids
+            new_pgid = self.get_pgid(False)
+            if self.pgid != new_pgid:
+                call_args = ["ionice", "-c", str(self.prio_class)]
+                if self.prio_class == 1 or self.prio_class == 2:
+                    call_args += ["-n", str(self.prio_data)]
+                call_args += ["-P", str(new_pgid)]
+                call(call_args)
+            self.pgid = new_pgid
             sleep(settings["other"]["check_interval"])
 
     def exit(self):
+        global command_output_thread
         print("Exiting thread {0}...".format(self))
         lock = RLock()
         lock.acquire()
         self.EXIT_FLAG = True
-        if isinstance(self.pids, list):
-            for pid in self.pids:
-                call_args = ["ionice", "-c", "0", "-p", str(pid)]
-                call(call_args)
+        pgid = self.get_pgid(True)
+        if pgid is not None:
+            call(["ionice", "-c", "0", "-P", str(self.get_pgid(True))])
         lock.release()
 
-    def get_pids(self):
-        pids = []
-        try:
-            if self.owner is not None:
-                for line in check_output(["ps", "-Lf", "-U", self.owner]).decode().splitlines():
-                    result = re.split("\s+", line)
-                    if result[0] == "UID":
-                        continue
-                    if self.process_name in result[9]:
-                        if self.grep_string is not None and self.grep_string not in "".join(result[9:]):
-                            continue
-                        pids.append(int(result[3]))
-            else:
-                for line in check_output(["ps", "aux", "-L"]).decode().splitlines():
-                    result = re.split("\s+", line)
-                    if self.process_name in result[12]:
-                        if self.grep_string is not None and self.grep_string not in "".join(result[12:]):
-                            continue
-                        pids.append(int(result[2]))
-            return pids
-        except CalledProcessError:
-            return
+    def get_pgid(self, now):
+        global command_output_thread
+        if now:
+            outputs = command_output_thread.output.splitlines()
+        else:
+            outputs = command_output_thread.get_output_now().splitlines()
+        for line in outputs:
+            result = re.split("\s+", line)
+            if not len(result):
+                continue
+            while not len(result[0]):
+                result.pop(0)
+            if result[0] == "UID":
+                continue
+            if (self.owner_uid is None or int(result[0]) == self.owner_uid) and self.process_name in result[2]:
+                if self.grep_string is None or self.grep_string in " ".join(result[2:]):
+                    return int(result[1])
+
+
+class CommandOutputThread(Thread):
+    def __init__(self, args):
+        Thread.__init__(self)
+        self.output = ""
+        self.args = args
+        self.EXIT_FLAG = False
+
+    def run(self):
+        global settings
+        while True:
+            if self.EXIT_FLAG:
+                return
+            try:
+                self.output = check_output(self.args).decode()
+            except CalledProcessError:
+                pass
+            sleep(settings["other"]["check_interval"])
+
+    def get_output_now(self):
+        return check_output(self.args).decode()
+
+    def exit(self):
+        print("Exiting command output thread {0}...".format(self))
+        self.EXIT_FLAG = True
 
 
 def handle(a, b):
@@ -138,6 +159,8 @@ def handle(a, b):
     print("Received SIGTERM, terminating all IOVeryNice threads...")
     for thread in all_threads():
         if isinstance(thread, IOVeryNice):
+            thread.exit()
+        if isinstance(thread, CommandOutputThread):
             thread.exit()
     RUN = False
 
@@ -175,6 +198,9 @@ if __name__ == "__main__":
     if geteuid() != 0:
         raise EnvironmentError("This program must be run as root.")
     settings = load_settings()
+    command_output_thread = CommandOutputThread(["ps", "ax", "-o", "uid", "-o", "%r%a"])
+    command_output_thread.start()
+    sleep(1)
     for limiter in settings["processes"]:
         print("Started setting class {3} on {2}'s {0}({1})'s all pids...".format(limiter["process_name"],
                                                                                  limiter["grep_string"],
