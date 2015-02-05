@@ -63,7 +63,7 @@ class IOVeryNice(Thread):
     }
 
     def __init__(self, process_name, grep_string, owner, prio_class, prio_data):
-        Thread.__init__(self)
+        Thread.__init__(self, daemon=True)
         valid = 0
         if process_name is not None and len(process_name):
             valid += 1
@@ -130,7 +130,7 @@ class IOVeryNice(Thread):
 
 class CommandOutputThread(Thread):
     def __init__(self, args):
-        Thread.__init__(self)
+        Thread.__init__(self, daemon=True)
         self.output = ""
         self.args = args
         self.EXIT_FLAG = False
