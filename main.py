@@ -75,7 +75,7 @@ class IOVeryNice(Thread):
         if owner is not None:
             valid += 1
             self.owner_uid = getpwnam(owner).pw_uid
-        assert valid >= 2
+        assert valid >= 1
         assert prio_class in range(0, 4)
         self.prio_class = prio_class
         assert prio_data in range(0, 8)
