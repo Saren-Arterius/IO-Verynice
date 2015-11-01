@@ -123,7 +123,7 @@ class IOVeryNice(Thread):
                 result.pop(0)
             if result[0] == "UID":
                 continue
-            if (self.owner_uid is None or int(result[0]) == self.owner_uid) and self.process_name in result[2]:
+            if (self.owner_uid is None or int(result[0]) == self.owner_uid) and (self.process_name is None or self.process_name in result[2]):
                 if self.grep_string is None or self.grep_string in " ".join(result[2:]):
                     return int(result[1])
 

@@ -1,0 +1,112 @@
+{
+    "classes": {
+        "idle": {
+            "prio_class": 3,
+            "prio_data": 0
+        },
+        "extreme_high": {
+            "prio_class": 1,
+            "prio_data": 0
+        },
+        "high": {
+            "prio_class": 2,
+            "prio_data": 0
+        },
+        "low": {
+            "prio_class": 2,
+            "prio_data": 7
+        },
+        "default": {
+            "prio_class": 0,
+            "prio_data": 0
+        },
+        "very_high": {
+            "prio_class": 1,
+            "prio_data": 4
+        }
+    },
+    "other": {
+        "check_interval": 5
+    },
+    "processes": [{
+        "class": "idle",
+        "process_name": "updatedb",
+        "grep_string": null,
+        "owner": "root"
+    }, {
+        "class": "idle",
+        "process_name": "dropbox",
+        "grep_string": null,
+        "owner": null
+    }, {
+        "class": "idle",
+        "process_name": "tar",
+        "grep_string": null,
+        "owner": null
+    }, {
+        "class": "idle",
+        "process_name": "xz",
+        "grep_string": null,
+        "owner": null
+    }, {
+        "class": "idle",
+        "process_name": "Plex",
+        "grep_string": "Plex Media Scanner",
+        "owner": "plex"
+    }, {
+        "class": "idle",
+        "process_name": "Plex",
+        "grep_string": "Plex Plug-in",
+        "owner": "plex"
+    }, {
+        "class": "very_high",
+        "process_name": null,
+        "grep_string": "./bin/www",
+        "owner": null
+    }, {
+        "class": "idle",
+        "process_name": "rsync",
+        "grep_string": "test",
+        "owner": "saren"
+    }, {
+        "class": "idle",
+        "process_name": "java",
+        "grep_string": "-urs/",
+        "owner": "saren"
+    }, {
+        "class": "idle",
+        "process_name": "java",
+        "grep_string": null,
+        "owner": "combatlife"
+    }, {
+        "class": "idle",
+        "process_name": "java",
+        "grep_string": "-urs-test/",
+        "owner": "saren"
+    }, {
+        "class": "idle",
+        "process_name": "java",
+        "grep_string": "Dynmap",
+        "owner": "saren"
+    }, {
+        "class": "low",
+        "process_name": "/usr/bin/smbd",
+        "grep_string": "smbd",
+        "owner": null
+    }, {
+        "class": "very_high",
+        "process_name": "nginx",
+        "grep_string": "nginx",
+        "owner": "http"
+    }, {
+        "class": "idle",
+        "process_name": "perfect",
+        "grep_string": "perfect dark.exe",
+        "owner": "saren-vnc"
+    }, {
+        "class": "idle",
+        "process_name": "drive",
+        "grep_string": "push",
+        "owner": null
+    }]
+}
